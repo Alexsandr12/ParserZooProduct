@@ -1,0 +1,13 @@
+# IDE config
+.idea/
+.vscode/
+venv/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Unit test / coverage reports
+*.log
+logs/
