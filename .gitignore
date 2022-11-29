@@ -2,6 +2,7 @@
 .idea/
 .vscode/
 venv/
+venvu/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -11,3 +12,6 @@ __pycache__/
 # Unit test / coverage reports
 *.log
 logs/
+
+#other files
+out/
