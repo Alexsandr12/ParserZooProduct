@@ -9,11 +9,11 @@ from csv_handler import Category
 
 class GetCategory:
     def main(self):
-        categores = self._get_categories_data()
-        self.forming_id_fields(categores)
+        categories = self._get_categories_data()
+        self.forming_id_fields(categories)
 
-        creater_file = Category()
-        creater_file.create_file(categores)
+        file_maker = Category()
+        file_maker.create_file(categories)
 
     def _get_categories_data(self) -> List[dict]:
         zootovary = sendreq.send_request()
@@ -27,24 +27,24 @@ class GetCategory:
                 "id": [str(i), tag.a.get("href")[1:]],
                 "parent_id": ""
             }
-            subcategies = self._get_subcategory(anim_category, tag)
-            categories += [anim_category]+subcategies
+            subcategories = self._get_subcategory(anim_category, tag)
+            categories += [anim_category]+subcategories
 
         return categories
 
     @staticmethod
     def _get_subcategory(anim_category: dict, animal_tag: element.Tag) -> List[dict]:
-        subcalegies = []
+        subcategories = []
 
-        subcategies_tag = animal_tag.find("ul", attrs={"class": CLASS_SUBCATEGORY})
-        for subcalegory in subcategies_tag.find_all("a"):
-            subcalegies.append({
-                "name": subcalegory.text,
-                "id": [anim_category['id'][0], f'{subcalegory.get("href").split("/")[-2]}/'],
+        subcategories_tag = animal_tag.find("ul", attrs={"class": CLASS_SUBCATEGORY})
+        for subcategory in subcategories_tag.find_all("a"):
+            subcategories.append({
+                "name": subcategory.text,
+                "id": [anim_category['id'][0], f'{subcategory.get("href").split("/")[-2]}/'],
                 "parent_id": anim_category["id"]
             })
 
-        return subcalegies
+        return subcategories
 
     @staticmethod
     def forming_id_fields(categories: List[dict]) -> None:
