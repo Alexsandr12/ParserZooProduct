@@ -1,5 +1,4 @@
 import csv
-from pathlib import Path
 
 from config import CATEGORY_FILE_PATH
 
