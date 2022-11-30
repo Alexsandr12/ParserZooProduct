@@ -16,7 +16,7 @@ class CategoryHandler:
     @staticmethod
     def read_file():
         data_file = []
-        with open(CATEGORY_FILE_PATH, "r", newline="") as file:
+        with open(CATEGORY_FILE_PATH, "r", newline="", encoding='utf-8') as file:
             reader = csv.DictReader(file, delimiter=";")
             for category in reader:
                 data_file.append(dict(category))
