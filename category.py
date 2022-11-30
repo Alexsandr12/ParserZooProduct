@@ -4,18 +4,18 @@ from bs4 import BeautifulSoup, element
 
 from request_to_site import sendreq
 from config import CLASS_ANIMAL_CATEGORY, CLASS_SUBCATEGORY
-from csv_handler import Category
+from csv_handler import CategoryHandler
 
 
-class GetCategory:
-    def main(self):
-        categories = self._get_categories_data()
+class CategoryParser:
+    def get_categories(self):
+        categories = self._parse_categories()
         self.forming_id_fields(categories)
 
-        file_maker = Category()
+        file_maker = CategoryHandler()
         file_maker.create_file(categories)
 
-    def _get_categories_data(self) -> List[dict]:
+    def _parse_categories(self) -> List[dict]:
         zootovary = sendreq.send_request()
         soup = BeautifulSoup(zootovary, "lxml")
         tags_animal_categories = soup.find_all("li", attrs={"class": CLASS_ANIMAL_CATEGORY})
@@ -27,13 +27,13 @@ class GetCategory:
                 "id": [str(i), tag.a.get("href")[1:]],
                 "parent_id": ""
             }
-            subcategories = self._get_subcategory(anim_category, tag)
+            subcategories = self._parse_subcategory(anim_category, tag)
             categories += [anim_category]+subcategories
 
         return categories
 
     @staticmethod
-    def _get_subcategory(anim_category: dict, animal_tag: element.Tag) -> List[dict]:
+    def _parse_subcategory(anim_category: dict, animal_tag: element.Tag) -> List[dict]:
         subcategories = []
 
         subcategories_tag = animal_tag.find("ul", attrs={"class": CLASS_SUBCATEGORY})
@@ -55,5 +55,5 @@ class GetCategory:
 
 
 if __name__ == "__main__":
-    get_category = GetCategory()
-    get_category.main()
+    get_category = CategoryParser()
+    get_category.get_categories()
