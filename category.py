@@ -37,10 +37,10 @@ class CategoryParser:
         subcategories = []
 
         subcategories_tag = animal_tag.find("ul", attrs={"class": CLASS_SUBCATEGORY})
-        for subcategory in subcategories_tag.find_all("a"):
+        for i, subcategory in enumerate(subcategories_tag.find_all("a"), 1):
             subcategories.append({
                 "name": subcategory.text,
-                "id": [anim_category['id'][0], f'{subcategory.get("href").split("/")[-2]}/'],
+                "id": [f"{anim_category['id'][0]}.{i}", f'{subcategory.get("href").split("/")[-2]}/'],
                 "parent_id": anim_category["id"]
             })
 
