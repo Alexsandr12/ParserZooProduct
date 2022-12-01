@@ -3,8 +3,8 @@ from typing import List
 from bs4 import BeautifulSoup, element
 
 from request_to_site import sendreq
-from config import CLASS_ANIMAL_CATEGORY, CLASS_SUBCATEGORY
-from csv_handler import CategoryHandler
+from config import CLASS_ANIMAL_CATEGORY, CLASS_SUBCATEGORY, CATEGORY_FILE_PATH
+from csv_handler import CsvHandler
 
 
 class CategoryParser:
@@ -12,8 +12,8 @@ class CategoryParser:
         categories = self._parse_categories()
         self.forming_id_fields(categories)
 
-        file_maker = CategoryHandler()
-        file_maker.create_file(categories)
+        file_maker = CsvHandler()
+        file_maker.create_file(categories, CATEGORY_FILE_PATH)
 
     def _parse_categories(self) -> List[dict]:
         zootovary = sendreq.send_request()
@@ -24,7 +24,7 @@ class CategoryParser:
         for i, tag in enumerate(tags_animal_categories, 1):
             anim_category = {
                 "name": tag.a.text,
-                "id": [str(i), tag.a.get("href")[1:]],
+                "id": [str(i), tag.a.get("href")],
                 "parent_id": ""
             }
             subcategories = self._parse_subcategory(anim_category, tag)
