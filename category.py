@@ -8,7 +8,9 @@ from csv_handler import CsvHandler
 
 
 class CategoryParser:
+    """Класс формирования данных для файла катерогий товаров."""
     def get_categories(self):
+        """"""
         categories = self._parse_categories()
         self.forming_id_fields(categories)
 
@@ -16,6 +18,11 @@ class CategoryParser:
         file_maker.create_file(categories, CATEGORY_FILE_PATH)
 
     def _parse_categories(self) -> List[dict]:
+        """Парсит данные главных категорий товаров и собрает все в один список.
+
+        Return:
+            List[dict]: спискок с данными категорий товаров
+        """
         zootovary = sendreq.send_request()
         soup = BeautifulSoup(zootovary, "lxml")
         tags_animal_categories = soup.find_all("li", attrs={"class": CLASS_ANIMAL_CATEGORY})
@@ -34,6 +41,14 @@ class CategoryParser:
 
     @staticmethod
     def _parse_subcategory(anim_category: dict, animal_tag: element.Tag) -> List[dict]:
+        """Парсит данные подкатегорий для одной основной катерогии товаров.
+
+        Args:
+            anim_category: данные основной категории товаров.
+            animal_tag: тег основной категории с данными подкатегорий товаров.
+        Return:
+            List[dict]: данные подкатегорий товаров.
+        """
         subcategories = []
 
         subcategories_tag = animal_tag.find("ul", attrs={"class": CLASS_SUBCATEGORY})
@@ -47,7 +62,12 @@ class CategoryParser:
         return subcategories
 
     @staticmethod
-    def forming_id_fields(categories: List[dict]) -> None:
+    def forming_id_fields(categories: List[dict]):
+        """Формирует поля id категорий в строку.
+
+        Args:
+            categories: данные категорий товаров
+        """
         for category in categories:
             category["id"] = ":".join(category["id"])
             if category['parent_id']:
