@@ -10,7 +10,7 @@ from csv_handler import CsvHandler
 class CategoryParser:
     """Класс формирования данных для файла катерогий товаров."""
     def get_categories(self):
-        """"""
+        """Собирает данные категорий товаров и отправляет их на запись в файл."""
         categories = self._parse_categories()
         self.forming_id_fields(categories)
 
