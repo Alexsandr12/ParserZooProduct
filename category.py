@@ -1,28 +1,27 @@
+import time
 from typing import List
 
 from bs4 import BeautifulSoup, element
 
 from request_to_site import sendreq
-from config import CLASS_ANIMAL_CATEGORY, CLASS_SUBCATEGORY, CATEGORY_FILE_PATH, CATEGORY_LOGGER
+from config import CLASS_ANIMAL_CATEGORY, CLASS_SUBCATEGORY, CATEGORY_FILE_PATH, RESTART
 from csv_handler import CsvHandler
-from logger import logger
+from logger import log
 
 
 class CategoryParser:
     """Класс формирования данных для файла катерогий товаров."""
-    log = logger.create_logger(CATEGORY_LOGGER)
 
     def get_categories(self):
         """Собирает данные категорий товаров и отправляет их на запись в файл."""
-        self.log.info("Запущен парсер категорий")
         categories = self._parse_categories()
         self.forming_id_fields(categories)
-        self.log.info("Получены значения категорий")
+        log.info("Получены значения категорий")
 
         file_maker = CsvHandler()
-        self.log.info("Данные отправлены для записи в файл.")
+        log.info("Данные отправлены для записи в файл.")
         file_maker.create_file(categories, CATEGORY_FILE_PATH)
-        self.log.info("Создан файл с категориями")
+        log.info("Создан файл с категориями")
 
     def _parse_categories(self) -> List[dict]:
         """Парсит данные главных категорий товаров и собрает все в один список.
@@ -30,7 +29,7 @@ class CategoryParser:
         Return:
             List[dict]: спискок с данными категорий товаров
         """
-        zootovary = sendreq.send_request()
+        zootovary = sendreq.send_request().text
         soup = BeautifulSoup(zootovary, "lxml")
         tags_animal_categories = soup.find_all("li", attrs={"class": CLASS_ANIMAL_CATEGORY})
 
@@ -82,5 +81,16 @@ class CategoryParser:
 
 
 if __name__ == "__main__":
+    log.info("Запущен парсер категорий")
     get_category = CategoryParser()
-    get_category.get_categories()
+    attempt = 1
+    restart_value = RESTART["restart_count"] + 1
+    while attempt <= restart_value:
+        try:
+            get_category.get_categories()
+            break
+        except Exception as err:
+            log.exception(f"Запуск парсера номер {attempt} "
+                          f"Ошибка: {err}")
+            attempt += 1
+            time.sleep(RESTART["interval_m"] * 60)
