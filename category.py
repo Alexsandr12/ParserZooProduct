@@ -3,19 +3,26 @@ from typing import List
 from bs4 import BeautifulSoup, element
 
 from request_to_site import sendreq
-from config import CLASS_ANIMAL_CATEGORY, CLASS_SUBCATEGORY, CATEGORY_FILE_PATH
+from config import CLASS_ANIMAL_CATEGORY, CLASS_SUBCATEGORY, CATEGORY_FILE_PATH, CATEGORY_LOGGER
 from csv_handler import CsvHandler
+from logger import logger
 
 
 class CategoryParser:
     """Класс формирования данных для файла катерогий товаров."""
+    log = logger.create_logger(CATEGORY_LOGGER)
+
     def get_categories(self):
         """Собирает данные категорий товаров и отправляет их на запись в файл."""
+        self.log.info("Запущен парсер категорий")
         categories = self._parse_categories()
         self.forming_id_fields(categories)
+        self.log.info("Получены значения категорий")
 
         file_maker = CsvHandler()
+        self.log.info("Данные отправлены для записи в файл.")
         file_maker.create_file(categories, CATEGORY_FILE_PATH)
+        self.log.info("Создан файл с категориями")
 
     def _parse_categories(self) -> List[dict]:
         """Парсит данные главных категорий товаров и собрает все в один список.
