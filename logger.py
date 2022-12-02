@@ -30,3 +30,4 @@ class MyLogger:
 
 
 logger = MyLogger()
+log = logger.create_logger("logger")
