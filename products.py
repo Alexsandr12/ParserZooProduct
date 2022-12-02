@@ -1,9 +1,10 @@
-import sys
+import time
 from datetime import datetime
 from typing import Union
 
 from bs4 import BeautifulSoup, element
 
+from myexceptions import NotValidCategory
 from request_to_site import sendreq
 from csv_handler import CsvHandler
 from config import (CATEGORIES,
@@ -19,8 +20,9 @@ from config import (CATEGORIES,
                     CLASS_SKU_NAME,
                     CLASS_SKU_COUNTRY,
                     CLASS_SKU_IMAGES,
-                    CLASS_NOT_PRODUCT)
+                    CLASS_NOT_PRODUCT, RESTART)
 from utils import delete_duplicate_product
+from logger import log
 
 
 class Products:
@@ -42,15 +44,19 @@ class Products:
     def get_products(self):
         """Запускает получение данных товаров по запрошенным категориям
         и отправляет их на запись в файл."""
+
         for link in self.category_link:
-            page = sendreq.send_request(f"{link}", params={'pc': PC})
+            log.info(f"Паксинг товаров по категории {link}.")
+            page = sendreq.send_request(f"{link}", params={'pc': PC}).text
             page_data = BeautifulSoup(page, "lxml")
             pagination = self._parse_pagination(page_data)
             self._get_products_for_category(pagination, page_data, link)
             self.products = delete_duplicate_product(self.products)
 
-            file_maker = CsvHandler()
-            file_maker.create_file(self.products, PRODUCTS_FILE_PATH)
+        log.info("Данные отправлены на запись в файл.")
+        file_maker = CsvHandler()
+        file_maker.create_file(self.products, PRODUCTS_FILE_PATH)
+        log.info("Файл с товарами создан.")
 
     @staticmethod
     def _parse_pagination(page_data: element.Tag) -> Union[str, None]:
@@ -75,11 +81,13 @@ class Products:
             page_data: тег страницы товаров по категории
             link: ссылка на товары по категории
         """
+        log.info(f"Парсинг товаров на странице 1.")
         self._get_products_from_page(page_data)
 
         if pagination:
             for page_i in range(2, int(pagination) + 1):
-                page = sendreq.send_request(f"{link}", params={'pc': PC, "PAGEN_1": page_i})
+                log.info(f"Парсинг товаров на странице {page_i}.")
+                page = sendreq.send_request(f"{link}", params={'pc': PC, "PAGEN_1": page_i}).text
                 page_data = BeautifulSoup(page, "lxml")
                 self._get_products_from_page(page_data)
 
@@ -92,7 +100,9 @@ class Products:
         products_content_info = page_data.find_all("div", attrs={"class": CLASS_PRODUCTS_LINK})
         for prod_content in products_content_info:
             product_link = prod_content.a.get("href")
-            prod_page = sendreq.send_request(product_link)
+            log.info(f"Парсинг товара по ссылке {product_link}.")
+
+            prod_page = sendreq.send_request(product_link).text
             prod_page_data = BeautifulSoup(prod_page, "lxml")
             parser = ProductsParser(prod_page_data, product_link)
             self.products += parser.parse_product_data()
@@ -128,7 +138,8 @@ class ProductsParser:
         active_data = self.page_data.find('div', attrs={"class": CLASS_PRODUCTS_LIST})
         sku_country = self._parse_sku_country(active_data)
 
-        for prod in active_data.find_all('tr', attrs={"class": CLASS_PRODUCT_DATA}):
+        for i, prod in enumerate(active_data.find_all('tr', attrs={"class": CLASS_PRODUCT_DATA}), 1):
+            log.info(f"Парсинг данных товара на строчке {i} на странице товара.")
             product_data = {
                 "price_datetime": datetime.now().replace(microsecond=0),
                 "price": "",
@@ -178,9 +189,12 @@ class ProductsParser:
         Return:
             str: наименование товара
         """
-        return self.page_data.find(
-            "div", attrs={"class": CLASS_SKU_NAME}
-        ).h1.text
+        try:
+            self.page_data.find(
+                "div", attrs={"class": CLASS_SKU_NAME}
+            ).h1.text
+        except AttributeError:
+            return ""
 
     @staticmethod
     def _parse_sku_country(active_data: element.Tag) -> str:
@@ -298,6 +312,7 @@ class CategoriesLinks:
         """
         categories_dict = self._get_categories_dict()
 
+        log.info("Формирование ссылок с запрошенными катерогиями.")
         if not CATEGORIES:
             return self._get_all_links(list(categories_dict.values()))
         else:
@@ -333,8 +348,7 @@ class CategoriesLinks:
         """
         req_categ_id = self._validate_categories_id(categories_dict, CATEGORIES.split(","))
         if not req_categ_id:
-            print("Нет валидных id категорий для получения списка товаров.")
-            sys.exit()
+            raise NotValidCategory
 
         links = []
         for categ_id in req_categ_id:
@@ -412,11 +426,26 @@ class CategoriesLinks:
             if categ_id.strip() in all_categories_id:
                 valid_categories_id.append(categ_id.strip())
             else:
-                print(f"Invalid category: {categ_id}")
+                log.info(f"Invalid category: {categ_id}.")
 
         return valid_categories_id
 
 
 if __name__ == "__main__":
-    get_product = Products()
-    get_product.get_products()
+    log.info("Запущен парсер товаров.")
+
+    attempt = 1
+    restart_value = RESTART["restart_count"] + 1
+    while attempt <= restart_value:
+        try:
+            get_product = Products()
+            get_product.get_products()
+            break
+        except NotValidCategory:
+            log.info("Нет валидных id категорий для получения списка товаров. Парсер прекращает работу.")
+            break
+        except Exception as err:
+            log.exception(f"Запуск парсера товаров номер {attempt} "
+                          f"Ошибка: {err}")
+            attempt += 1
+            time.sleep(RESTART["interval_m"] * 60)
